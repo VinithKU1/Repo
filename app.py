@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Demo exchange rates (fallback)
+# Demo exchange rates (can be replaced with live ones)
 exchange_rates = {
     "USD": {"INR": 83.0, "EUR": 0.93},
     "INR": {"USD": 0.012, "EUR": 0.011},
@@ -13,9 +13,9 @@ exchange_rates = {
 
 @app.route('/')
 def home():
-    return render_template("index.html")  # or use jsonify() if you don’t have a frontend
+    return render_template("index.html")  # Make sure index.html is inside the 'templates' folder
 
-@app.route('/convert', methods=['POST'])
+@app.route('/api/convert', methods=['POST'])
 def convert():
     data = request.get_json()
     amount = data.get("amount")
@@ -26,12 +26,14 @@ def convert():
         return jsonify({"error": "Invalid input"}), 400
 
     try:
-        # Live rate from exchangerate.host
-        res = requests.get("https://api.exchangerate.host/convert",
-                           params={"from": from_currency, "to": to_currency})
+        # Try to fetch live exchange rate
+        res = requests.get("https://api.exchangerate.host/convert", params={
+            "from": from_currency,
+            "to": to_currency
+        })
         rate = res.json()["info"]["rate"]
         converted_amount = amount * rate
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Failed to fetch exchange rate"}), 500
 
     return jsonify({
@@ -42,7 +44,6 @@ def convert():
         "converted_amount": round(converted_amount, 2)
     })
 
-# ✅ Correct single app.run block
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 8080))  # Railway uses PORT env variable
     app.run(host='0.0.0.0', port=port)
