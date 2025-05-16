@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Demo exchange rates
+# Demo exchange rates (fallback)
 exchange_rates = {
     "USD": {"INR": 83.0, "EUR": 0.93},
     "INR": {"USD": 0.012, "EUR": 0.011},
@@ -13,8 +13,7 @@ exchange_rates = {
 
 @app.route('/')
 def home():
-    return jsonify({"message": "Welcome to Currency Converter API"})
-
+    return render_template("index.html")  # or use jsonify() if you don’t have a frontend
 
 @app.route('/convert', methods=['POST'])
 def convert():
@@ -27,8 +26,8 @@ def convert():
         return jsonify({"error": "Invalid input"}), 400
 
     try:
-        # Fetch live rate
-        res = requests.get(f"https://api.exchangerate.host/convert",
+        # Live rate from exchangerate.host
+        res = requests.get("https://api.exchangerate.host/convert",
                            params={"from": from_currency, "to": to_currency})
         rate = res.json()["info"]["rate"]
         converted_amount = amount * rate
@@ -42,14 +41,8 @@ def convert():
         "original_amount": amount,
         "converted_amount": round(converted_amount, 2)
     })
+
+# ✅ Correct single app.run block
 if __name__ == '__main__':
-    app.run(debug=True)
-
-@app.route('/')
-def home():
-    return render_template("index.html")
-
-port = int(os.environ.get("PORT", 5000))
-app.run(host='0.0.0.0', port=port)
-
- 
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
